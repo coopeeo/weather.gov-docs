@@ -1,0 +1,46 @@
+name: Deploy Swagger API Docs
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "*/5 * * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      #- name: Checkout
+      #  uses: actions/checkout@v4
+
+      - name: Get weather.gov openapi.yml file
+        run: curl https://api.weather.gov/openapi.yml -o openapi.yml
+      
+      - name: Generate Swagger UI
+        uses: Legion2/swagger-ui-action@v1
+        with:
+          version: "5.11.0"
+          output: swagger-ui
+          spec-file: ./openapi.yml
+          
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: swagger-ui
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
